@@ -157,11 +157,3 @@ VarDfFilt2 = pd.read_csv('6_python_combined_snps_filtered_genotyped_labelled.tsv
 #filter for quality of snps >30
 VarDfFilt2 = VarDfFilt2[VarDfFilt2['QUAL']>=30]
 VarDfFilt2.to_csv('7_python_combined_snps_filtered_genotyped_labelled_qualfiltered.tsv',index=None,sep='\t')
-
-
-### Now move on to filtering the combined INDELS.
-
-# Read in the dataframe as InDf and then add column headers
-
-# InDf = pd.read_csv('combined_indels_trans.txt',header=None,sep='\t')
-# InDf.columns = 'SAMPLE\tCHROM\tPOS\tREF\tALT\tQUAL\tGT\tAD\tDP\tANN'.split('\t')
