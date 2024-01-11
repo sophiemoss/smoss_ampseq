@@ -8,9 +8,9 @@ First, the raw fastq files need to be demultiplexed.
 
 Then, the amplicon pipeline needs to be run to create a combined VCF using the variant caller of choice (in my case both gatk and freebayes)
 
-Then, this combined VCF should be filtered and annotated using snpeff (sophie_makecombinedvcf_snpeff.py)
+Then, this combined VCF should be filtered and annotated using snpeff (can use bcftools csq but have found snpeff to be better).
 
-Finally, the txt files of annotated SNPs and INDELs can be filtered further using sophie_combined_vcf_filtering.py
+Finally, the txt files of annotated SNPs and INDELs can be filtered further before processing.
 
 The parameters and metadata need to change depending on the sample set.
 
