@@ -4,9 +4,11 @@
 # Separate them by sample and amplicon
 # Convert them to FASTA
 # Blast them to confirm species identity
+# Dependencies: bcftools, samtools, seqtk, grep, bash 
+# Input files needed: BAM files, reference fasta and species_markers.bed file 
 # ----------------------------
 
-# Prepare regions of interest bed file
+# Prepare species markers of interest bed file
 # grep -E 'COX1|IGS|SINE200|MtND4' AgamP4_chr.bed > species_markers.bed
 
 
@@ -14,30 +16,45 @@
 
 # ---- CONFIG ----
 BED="/mnt/storage11/sophie/env_dna/species_markers.bed"
+REF="/mnt/storage11/sophie/env_dna/Anopheles_gambiae.AgamP4.dna.toplevel.fa"
 THREADS=4
 
 # ---- Process each sample BAM ----
-for bam in *.bam; do
-    sample=$(basename "$bam" .bam)
-    echo "Processing $sample..."
+# Index reference if not already
+if [ ! -f "${REF}.fai" ]; then
+    echo "Indexing reference..."
+    samtools faidx "$REF"
+fi
+
+for BAM in *.bam; do
+    SAMPLE=$(basename "$BAM" .bam)
+    echo "Processing $SAMPLE..."
 
     # Ensure BAM is indexed
-    if [ ! -f "${bam}.bai" ]; then
-        echo "Indexing $bam..."
-        samtools index "$bam"
-    fi
+    [ ! -f "${BAM}.bai" ] && samtools index "$BAM"
 
-    # Loop through each marker amplicon region
-    while read -r chrom start end name; do
-        region="${chrom}:${start}-${end}"
-        echo "  Extracting $name from $region..."
+    # Loop over each marker region
+    while read -r CHR START END NAME; do
+        REGION="${CHR}:${START}-${END}"
+        echo "  Extracting region $NAME ($REGION)..."
 
-        # Extract reads from region, convert to FASTA
-        samtools view -b "$bam" "$region" | \
-            samtools fastq - | \
-            seqtk seq -A - > "${sample}_${name}.fasta"
+        # 1. Extract region to temp BAM
+        samtools view -b "$BAM" "$REGION" > "${SAMPLE}_${NAME}.bam"
+        samtools index "${SAMPLE}_${NAME}.bam"
+
+        # 2. Call variants
+        bcftools mpileup -f "$REF" "${SAMPLE}_${NAME}.bam" | \
+        bcftools call -mv -Oz -o "${SAMPLE}_${NAME}.vcf.gz"
+
+        # 3. Index VCF
+        bcftools index "${SAMPLE}_${NAME}.vcf.gz"
+
+        # 4. Generate consensus
+        bcftools consensus -f "$REF" "${SAMPLE}_${NAME}.vcf.gz" > "${SAMPLE}_${NAME}_consensus.fasta"
+
+        echo "    → ${SAMPLE}_${NAME}_consensus.fasta created."
 
     done < "$BED"
 
-    echo "Done with $sample"
+    echo "Finished $SAMPLE"
 done

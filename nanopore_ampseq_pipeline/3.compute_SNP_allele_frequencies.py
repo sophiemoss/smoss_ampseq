@@ -9,7 +9,7 @@ import pandas as pd
 # ----------------------------
 # Configurable file paths
 # ----------------------------
-snp_file = "combined_genotyped_filtered_formatted.snps.trans.txt"  # SNPs per sample
+snp_file = "/mnt/storage11/sophie/env_dna/double_demux_fastqs/combined_genotyped_filtered_formatted.snps.trans.txt"  # SNPs per sample
 tsv_matrix = "amplicon_coverage_matrix.tsv"  # Amplicon x Sample coverage depth matrix
 bed_file = "/mnt/storage11/sophie/env_dna/AgamP4_chr.bed"  # BED file with amplicon coordinates
 output_file = "snp_frequencies_filtered_by_coverage.tsv"
