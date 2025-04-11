@@ -56,11 +56,13 @@ snp_df["ALT_COUNT"] = snp_df["GT"].apply(count_alt)
 # ----------------------------
 # Step 4: Calculate frequencies per SNP
 # ----------------------------
-print("Calculating allele frequencies...")
+
+print ("Calculating allele frequencies...")
 freq_rows = []
 
-for (chrom, pos), group in snp_df.groupby(["CHROM", "POS"]):
+for (chrom, pos, alt), group in snp_df.groupby(["CHROM", "POS", "ALT"]):
     amplicon = group["AMPLICON"].iloc[0]
+    ref = group["REF"].iloc[0]
 
     if pd.isna(amplicon) or amplicon not in coverage_matrix.index:
         continue  # Skip if amplicon not found
@@ -73,9 +75,6 @@ for (chrom, pos), group in snp_df.groupby(["CHROM", "POS"]):
     n_samples = len(subset)
     freq = alt_sum / (2 * n_samples) if n_samples > 0 else 0
 
-    ref = group["REF"].iloc[0]
-    alt = group["ALT"].iloc[0]
-    
     freq_rows.append({
         "CHROM": chrom,
         "POS": pos,
