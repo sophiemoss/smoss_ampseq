@@ -1,60 +1,81 @@
-# ----------------------------
-# The Plan
-# Extract read's from each sample's BAM file that map to one of the 4 species amplicons of interest (COX1, IGS, SINE200, MtND4)
-# Separate them by sample and amplicon
-# Convert them to FASTA
-# Blast them to confirm species identity
-# Dependencies: bcftools, samtools, seqtk, grep, bash 
-# Input files needed: BAM files, reference fasta and species_markers.bed file 
-# ----------------------------
-
-# Prepare species markers of interest bed file
-# grep -E 'COX1|IGS|SINE200|MtND4' AgamP4_chr.bed > species_markers.bed
-
-
 #!/bin/bash
 
-# ---- CONFIG ----
+# ----------------------------
+# CONFIGURATION
+# ----------------------------
 BED="/mnt/storage11/sophie/env_dna/species_markers.bed"
 REF="/mnt/storage11/sophie/env_dna/Anopheles_gambiae.AgamP4.dna.toplevel.fa"
 THREADS=4
+OUTDIR="species_markers_merged_fasta"
+mkdir -p "$OUTDIR"
 
-# ---- Process each sample BAM ----
+# ----------------------------
 # Index reference if not already
+# ----------------------------
 if [ ! -f "${REF}.fai" ]; then
     echo "Indexing reference..."
     samtools faidx "$REF"
 fi
 
+# ----------------------------
+# Process each BAM, extract just the sample name
+# ----------------------------
 for BAM in *.bam; do
-    SAMPLE=$(basename "$BAM" .bam)
-    echo "Processing $SAMPLE..."
+    SAMPLE=$(basename "$BAM" .bam | cut -d_ -f1)
+    echo "🧬 Processing $SAMPLE..."
 
-    # Ensure BAM is indexed
+    # Index BAM if needed
     [ ! -f "${BAM}.bai" ] && samtools index "$BAM"
 
-    # Loop over each marker region
+    # Output file for merged consensus
+    MERGED_FASTA="${OUTDIR}/${SAMPLE}_species_markers_merged.fasta"
+    rm -f "$MERGED_FASTA"
+
+    # Loop through amplicons from BED
     while read -r CHR START END NAME; do
         REGION="${CHR}:${START}-${END}"
-        echo "  Extracting region $NAME ($REGION)..."
+        echo "  ↪ Extracting $NAME from $REGION..."
 
-        # 1. Extract region to temp BAM
-        samtools view -b "$BAM" "$REGION" > "${SAMPLE}_${NAME}.bam"
-        samtools index "${SAMPLE}_${NAME}.bam"
+        # Temp files
+        TEMP_BAM="${SAMPLE}_${NAME}.bam"
+        VCF_GZ="${SAMPLE}_${NAME}.vcf.gz"
 
-        # 2. Call variants
-        bcftools mpileup -f "$REF" "${SAMPLE}_${NAME}.bam" | \
-        bcftools call -mv -Oz -o "${SAMPLE}_${NAME}.vcf.gz"
+        # Extract BAM region
+        samtools view -b "$BAM" "$REGION" > "$TEMP_BAM"
 
-        # 3. Index VCF
-        bcftools index "${SAMPLE}_${NAME}.vcf.gz"
+        # Skip if BAM is empty
+        if [ ! -s "$TEMP_BAM" ]; then
+            echo "    ⚠️  No reads in $TEMP_BAM, skipping $NAME."
+            rm -f "$TEMP_BAM"
+            continue
+        fi
 
-        # 4. Generate consensus
-        bcftools consensus -f "$REF" "${SAMPLE}_${NAME}.vcf.gz" > "${SAMPLE}_${NAME}_consensus.fasta"
+        # Index BAM only if it exists
+        if [ -f "$TEMP_BAM" ]; then
+            samtools index "$TEMP_BAM"
+        else
+            echo " ❌ BAM file $TEMP_BAM was not created due to empty reads. Skipping $NAME."
+            continue
+        fi
 
-        echo "    → ${SAMPLE}_${NAME}_consensus.fasta created."
+        # Variant calling
+        bcftools mpileup -f "$REF" "$TEMP_BAM" | \
+        bcftools call -mv -Oz -o "$VCF_GZ"
+
+        bcftools index -f "$VCF_GZ"
+
+        # Add consensus to merged FASTA
+        echo ">${SAMPLE}_${NAME}" >> "$MERGED_FASTA"
+        bcftools consensus -f "$REF" "$VCF_GZ" | grep -v "^>" >> "$MERGED_FASTA"
+
+        echo "    ✔ $NAME added to ${MERGED_FASTA}"
+
+        # Cleanup
+        rm -f "$TEMP_BAM" "$TEMP_BAM.bai" "$VCF_GZ" "$VCF_GZ.csi"
 
     done < "$BED"
 
-    echo "Finished $SAMPLE"
+    echo "✅ Finished $SAMPLE → ${MERGED_FASTA}"
 done
+
+echo "🎯 All merged FASTAs are saved in: $OUTDIR/"
