@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ----------------------------
-# CONFIGURATION
+# REQUIRED PACKAGES
 # ----------------------------
 BED="/mnt/storage11/sophie/env_dna/species_markers.bed"
 REF="/mnt/storage11/sophie/env_dna/Anopheles_gambiae.AgamP4.dna.toplevel.fa"
@@ -50,13 +50,7 @@ for BAM in *.bam; do
             continue
         fi
 
-        # Index BAM only if it exists
-        if [ -f "$TEMP_BAM" ]; then
-            samtools index "$TEMP_BAM"
-        else
-            echo " ❌ BAM file $TEMP_BAM was not created due to empty reads. Skipping $NAME."
-            continue
-        fi
+        samtools index "$TEMP_BAM"
 
         # Variant calling
         bcftools mpileup -f "$REF" "$TEMP_BAM" | \
@@ -64,11 +58,18 @@ for BAM in *.bam; do
 
         bcftools index -f "$VCF_GZ"
 
-        # Add consensus to merged FASTA
-        echo ">${SAMPLE}_${NAME}" >> "$MERGED_FASTA"
-        bcftools consensus -f "$REF" "$VCF_GZ" | grep -v "^>" >> "$MERGED_FASTA"
+        # Extract consensus sequence for the specific amplicon region
+        bcftools consensus -f "$REF" "$VCF_GZ" > tmp_consensus.fa
+        samtools faidx tmp_consensus.fa "$REGION" > tmp_region.fa
+        SEQ=$(grep -v "^>" tmp_region.fa | tr -d '\n')
 
-        echo "    ✔ $NAME added to ${MERGED_FASTA}"
+        if [ -z "$SEQ" ]; then
+            echo "    ⚠️  Empty sequence for $NAME — skipping."
+        else
+            echo ">${SAMPLE}_${NAME}" >> "$MERGED_FASTA"
+            echo "$SEQ" >> "$MERGED_FASTA"
+            echo "    ✔ $NAME added to ${MERGED_FASTA}"
+        fi
 
         # Cleanup
         rm -f "$TEMP_BAM" "$TEMP_BAM.bai" "$VCF_GZ" "$VCF_GZ.csi"
