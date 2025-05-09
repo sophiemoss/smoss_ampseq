@@ -111,7 +111,7 @@ for i in glob.glob('./*.bam'):
    # Known issues:
    # When calling variants, freebayes correctly keeps in the denominator, maintaing the homozygous reference calls for samples where a SNP is not present
    # GATK alone and GATK+Freebayes combined do not do this, the homozygous reference calls are filtered out at the HaplotypeCaller stage
-   # For denominator, can use freebayes variant caller
+  
 
 
 
