@@ -11,10 +11,10 @@ import pandas as pd
 # ----------------------------
 # Configurable file paths
 # ----------------------------
-snp_file = "/mnt/storage11/sophie/env_dna/double_demux_fastqs/combined_genotyped_filtered_formatted.snps.trans.txt"  # SNPs per sample, contains genotype calls GT and allele depth AD
+snp_file = "combined_genotyped_filtered_formatted.snps.trans.txt"  # SNPs per sample, contains genotype calls GT and allele depth AD
 tsv_matrix = "amplicon_coverage_matrix.tsv"  # Amplicon x Sample coverage depth matrix, includes the read depth per sample, per amplicon.
-bed_file = "/mnt/storage11/sophie/env_dna/AgamP4_chr.bed"  # BED file with amplicon genomic positions in reference genome
-output_file = "snp_frequencies_filtered_by_coverage_and_AD_gt20.tsv"
+bed_file = "aedes_minion_renamed_chrs.bed"  # BED file with amplicon genomic positions in reference genome
+output_file = "snp_frequencies_filtered_by_coverage_and_altDP20.tsv"
 
 
 # ----------------------------

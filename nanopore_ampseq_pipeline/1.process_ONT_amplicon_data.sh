@@ -15,7 +15,7 @@ dorado --sample_sheet /mnt/storageG1/data/experiments/Exp149_eDNA_amplicon_Ghana
 
 #2 run the extra demultiplexing (I did this in G1)
 
-python demux_nanopore_plates_sophie.py \
+python demux_nanopore_plates_edgesize100py \
 -p plate_layout.csv \
 -b internal_barcodes.csv \
 -f /mnt/storageG1/data/experiments/Exp149_eDNA_amplicon_Ghana/exp149/nanopore_pipeline_out_exp149/fastq/fastq \
@@ -25,12 +25,12 @@ python demux_nanopore_plates_sophie.py \
 
 #3 Move the fastq files that have been double demultiplexed to s11 and then continue with amplicon script.
 
+
+for f in *.fastq ; do bgzip -c "$f" > "${f%.*}.fastq.gz" ; done
+
 ls *.fastq | sed 's/.fastq//' > samples.txt
 echo -e "sample" | cat - samples.txt > samples_header.txt
 sed 's/ \+/,/g' samples_header.txt > sample_file.csv
-
-#4
-for f in *.fastq ; do bgzip -c "$f" > "${f%.*}.fastq.gz" ; done
 
 #5 
 
@@ -50,9 +50,11 @@ comm -23 <(cut -f1-4 AgamP4_chr.bed | sort) matched.bed
 awk 'NR==FNR {chrlen[$1]=$2; next} $1 in chrlen && $3 <= chrlen[$1] {next} {print "Invalid:", $0}' Anopheles_gambiae.AgamP4.dna.toplevel.fa.fai AgamP4_chr.bed
 # If nothing prints to terminal, you're good.
 
-#6 Make sure there is no samclip as this gets rid of all amplicon reads
+#6 
+# Make sure there is no samclip as this gets rid of all amplicon reads
+# Mapping of amplicon data
 
-python /mnt/storage11/sophie/gitrepos/amplicon-seq/scripts/sophie_nanopore_amplicon_script_minimap2_nosamclip.py \
+python /mnt/storage11/sophie/gitrepos/anopheles_ampseq/nanopore_ampseq_pipeline/sophie_nanopore_amplicon_script_minimap2_nosamclip.py \
 --index-file sample_file.csv \
 --ref /mnt/storage11/sophie/env_dna/Anopheles_gambiae.AgamP4.dna.toplevel.fa \
 --gff /mnt/storage11/sophie/env_dna/Anopheles_gambiae.AgamP4.56.gff3 \

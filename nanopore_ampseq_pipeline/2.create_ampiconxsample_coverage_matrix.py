@@ -3,7 +3,7 @@ import pandas as pd
 from glob import glob
 
 # Path to your folder of coverage files
-coverage_folder = "/mnt/storage11/sophie/env_dna/double_demux_fastqs/"
+coverage_folder = "/mnt/storage11/sophie/puck_aedes_amplicon/aegypti"
 coverage_files = glob(os.path.join(coverage_folder, "*_coverage_mean.txt"))
 print("Found coverage files:", len(coverage_files))
 print(coverage_files)
