@@ -63,7 +63,7 @@ for bc in plate_layout:
         print(f"✅ Fastq file {fastq_file} exists and is ready for demultiplexing.")
 
     # Run demultiplexing
-    sp.run(f"/mnt/storageG1/data/experiments/Exp149_eDNA_amplicon_Ghana/exp149/demux_nanopore_amplicon.py --max-mismatch {args.max_mismatch} --fastq {fastq_file} --barcodes {tmp_barcode_file} --edge-size 100 --log-prefix {bc}", shell=True)
+    sp.run(f"/mnt/storage11/sophie/gitrepos/smoss_ampseq/nanopore_ampseq_pipeline/demux_nanopore_amplicon.py --max-mismatch {args.max_mismatch} --fastq {fastq_file} --barcodes {tmp_barcode_file} --edge-size 20 --log-prefix {bc}", shell=True)
 
     # Remove temp file
     sp.run(f"rm {tmp_barcode_file}", shell=True)

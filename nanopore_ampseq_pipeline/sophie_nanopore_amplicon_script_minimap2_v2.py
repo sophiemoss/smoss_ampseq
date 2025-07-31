@@ -17,7 +17,8 @@ EXAMPLE USAGE:
         --gff Anopheles_gambiae.AgamP4.56.gff3 \
         --bed AgamP4_chr.bed \
         --min-base-qual 20 \
-        --threads 10 > amplicon_log.txt 2>&1
+        --threads 10 > amplicon_log.txt 2>&1 \
+        --snpeff-db Anopheles_darlingi_2
 
 REQUIRED ARGUMENTS:
     --index-file        CSV file sampleIDs in 'sample' column
@@ -97,6 +98,7 @@ def main(args):
     import os
     assert os.path.exists("bam_list.txt") and os.path.getsize("bam_list.txt") > 0, "bam_list.txt is empty!"
 
+
     # VARIANT CALLING (FreeBayes in GVCF mode)(chunking of gvcf is enabled here for Aedes genome as this is so large. For Anopheles we used to have the additional argument --gvcf-dont-use-chunk true)
     log(f"Starting variant calling with FreeBayes")
     run_cmd("freebayes -f %(ref)s -t %(bed)s -L bam_list.txt --haplotype-length -1 --min-coverage 10 --min-base-quality %(min_base_qual)s --gvcf > combined.genotyped.vcf" % vars(args))
@@ -107,20 +109,24 @@ def main(args):
             "bcftools norm -f %(ref)s | bcftools sort -Oz -o combined.genotyped.vcf.gz" % vars(args))
 
     # VARIANT FILTERING
-    log(f"Starting filtering for FMT/DP>10")
+    log(f"Starting filtering for FMT/DP>10") # at least one sample needs depth more than 10 for the variant to be retained
     run_cmd("bcftools filter -i 'FMT/DP>10' -S . combined.genotyped.vcf.gz | "
             "bcftools view --threads %(threads)s -i 'QUAL>30' | bcftools sort | bcftools norm -m - -Oz -o combined.genotyped_filtered_FMTDP10.vcf.gz" % vars(args))
     log(f"Finished filtering for FMT/DP>10")
     #         
-    # SNP ANNOTATION + EXPORT
-    run_cmd("bcftools view --threads %(threads)s -v snps combined.genotyped_filtered_FMTDP10.vcf.gz | bcftools csq -p a -f %(ref)s -g %(gff)s -Oz -o snps.vcf.gz" % vars(args))    
-    
-    run_cmd("(echo 'SAMPLE\tCHROM\tPOS\tREF\tALT\tQUAL\tGT\tDP\tAD\tBCSQ' ; bcftools query -f '[%SAMPLE\t%CHROM\t%POS\t%REF\t%ALT\t%QUAL\t%GT\t%DP\t%AD\t%BCSQ\n]' snps.vcf.gz) > combined.genotyped_filtered_FMTDP10_formatted.snps.trans.txt")
+    # SNP EXPORT
+    run_cmd("bcftools view --threads %(threads)s -v snps combined.genotyped_filtered_FMTDP10.vcf.gz -Oz -o snps.vcf.gz" % vars(args))
+    run_cmd("snpEff %(snpeff_db)s snps.vcf.gz > snps.ann.vcf.gz" % vars(args))
+
+    run_cmd('(echo -e "SAMPLE\tCHROM\tPOS\tREF\tALT\tQUAL\tGT\tAD\tDP\tANN" ; bcftools query -f "[%SAMPLE\t%CHROM\t%POS\t%REF\t%ALT\t%QUAL\t%GT\t%AD\t%DP\t%ANN\\n]" snps.ann.vcf.gz) > combined_snps_trans.txt')
+
 
     # INDEL ANNOTATION + EXPORT
-    run_cmd("bcftools view --threads %(threads)s -v indels combined.genotyped_filtered_FMTDP10.vcf.gz | bcftools csq -p a -f %(ref)s -g %(gff)s -Oz -o indels.vcf.gz" % vars(args))
+    run_cmd("bcftools view --threads %(threads)s -v indels combined.genotyped_filtered_FMTDP10.vcf.gz -Oz -o indels.vcf.gz" % vars(args))
 
-    run_cmd("(echo 'SAMPLE\tCHROM\tPOS\tREF\tALT\tQUAL\tGT\tDP\tAD\tBCSQ' ; bcftools query -f '[%SAMPLE\t%CHROM\t%POS\t%REF\t%ALT\t%QUAL\t%GT\t%DP\t%AD\t%BCSQ\n]' indels.vcf.gz) > combined.genotyped_filtered_FMTDP10_formatted.indels.trans.txt")
+    run_cmd("snpEff %(snpeff_db)s indels.vcf.gz > indels.ann.vcf.gz" % vars(args))
+
+    run_cmd('(echo -e "SAMPLE\tCHROM\tPOS\tREF\tALT\tQUAL\tGT\tAD\tDP\tANN" ; bcftools query -f "[%SAMPLE\t%CHROM\t%POS\t%REF\t%ALT\t%QUAL\t%GT\t%AD\t%DP\t%ANN\\n]" indels.ann.vcf.gz) > combined_indels_trans.txt')
 
     # DEPTH EXTRACTION ACROSS AMPLICON POSITIONS
     bedlines = []
@@ -161,6 +167,7 @@ parser.add_argument('--bed', type=str, help='BED file with amplicon or target re
 parser.add_argument('--threads', default=10, type=int, help='Threads for parallel processing')
 parser.add_argument('--min-base-qual', default=30, type=int, help='Minimum base quality for FreeBayes')
 parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+parser.add_argument('--snpeff-db', type=str, required=True, help='SnpEff database name (e.g., Anopheles_darlingi_2)')
 parser.set_defaults(func=main)
 
 # ___ RUN MAIN ___

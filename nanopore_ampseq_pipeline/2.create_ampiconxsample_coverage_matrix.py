@@ -1,9 +1,28 @@
+#!/usr/bin/env python3
+"""
+This script processes amplicon coverage files and generates:
+1. A coverage matrix (amplicons × samples)
+2. A binary success matrix (1 if depth ≥ 10, else 0)
+3. Summary statistics showing % success per amplicon and per sample
+
+### How to run:
+python script_name.py /path/to/coverage_folder
+
+Each file in the folder should be named like: SAMPLE_coverage_mean.txt
+"""
+
 import os
+import sys
 import pandas as pd
 from glob import glob
 
-# Path to your folder of coverage files
-coverage_folder = "/mnt/storage11/sophie/puck_aedes_amplicon/aegypti"
+if len(sys.argv) != 2:
+    print("Usage: python script_name.py /path/to/coverage_folder")
+    sys.exit(1)
+
+# Get coverage folder from command-line argument
+coverage_folder = sys.argv[1]
+
 coverage_files = glob(os.path.join(coverage_folder, "*_coverage_mean.txt"))
 print("Found coverage files:", len(coverage_files))
 print(coverage_files)
