@@ -10,6 +10,10 @@ applies filtering and annotation, and summarizes SNPs and indels for each sample
 Edits from the original script include removing samclip as this got rid of amplicon reads, 
 changing to minimap2 for mapping as this is faster, and allowing freebayes to do gvcf chunking.
 
+
+#### Note that this script does NOT trim off any adaptors/primers/barcodes from the amplicons sequenced. ####
+
+
 EXAMPLE USAGE:
     python this_script.py \
         --index-file sample_file.csv \

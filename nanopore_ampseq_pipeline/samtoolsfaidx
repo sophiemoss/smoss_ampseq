@@ -1,0 +1,6 @@
+samtools faidx GCF_943734685.1_AcolN3_genomic_renamedchrs.fasta NC_064604.1:1425-2960 > COX1.AColN3.fa
+samtools faidx GCF_943734685.1_AcolN3_genomic_renamedchrs.fasta UNKN:36384025-36384413 > IGS.AColN3.fa
+samtools faidx GCF_943734685.1_AcolN3_genomic_renamedchrs.fasta NC_064669.1:22951332-22951809 > SINE200.AColN3.fa
+samtools faidx GCF_943734685.1_AcolN3_genomic_renamedchrs.fasta UNKN:31004851-31005267 > ITS1.AColN3.fa
+samtools faidx GCF_943734685.1_AcolN3_genomic_renamedchrs.fasta UNKN:35962838-35963328 > ITS2.AColN3.fa
+samtools faidx GCF_943734685.1_AcolN3_genomic_renamedchrs.fasta NC_064604.1:8309-8824 > MtND4.AColN3.fa
