@@ -2,8 +2,9 @@
 
 set -euo pipefail
 
-TARGET="ACATCCTAAAATAATGAATTAAATGCAGTTCCTTATTATTCTCAGCTAACCGCTATTGTTCAGCGTGAACAATGCATTAAATTCTGAGTGGAGTAAAATGTATC"
-OUT="m2_an_colgamb_region_reads_seqkitfuzzy.txt"
+TARGET="AGCAGGATAGTCAGTCCTACGTATGGCGGCGCGGTCTATTTGGGGATTGAAC" # this is just 50bp from the centre of the insertion region
+
+OUT="an_coluzzii_specific_region_reads_seqkitfuzzy_50bpregion.tsv"
 > "$OUT"
 
 for bam in *.bam; do
